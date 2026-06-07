@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import "./App.css";
 
-const API = "http://localhost:8000";
+const API = "https://kuhnquantumpoker.onrender.com";
 
 const CARD_DISPLAY = {
   J: { label: "J", name: "Jack", rank: 1 },
