@@ -20,7 +20,7 @@ load_dotenv()  # reads .env file automatically
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
-from scipy.optimize import differential_evolution
+from scipy.optimize import minimize
 
 # ────────────────────────────────────────────────
 # GAME ENGINE
@@ -52,10 +52,30 @@ def expected_value(p1_bet, p1_call, p2_bet, p2_call):
 # ────────────────────────────────────────────────
 
 def build_circuit(params):
-    """6-qubit circuit: each qubit's P(|1⟩) = one Quantum opponent strategy probability."""
+    """
+    6-qubit circuit with superposition and entanglement.
+    - Hadamard gates: put all qubits in superposition
+    - CNOT gates: entangle qubits so decisions are correlated
+    - RY rotations: tunable parameters the optimizer adjusts
+    """
     qc = QuantumCircuit(6)
+
+    # Superposition: all qubits start in equal mix of 0 and 1
+    for i in range(6):
+        qc.h(i)
+
+    # Layer 1: parameterized rotations
     for i in range(6):
         qc.ry(params[i], i)
+
+    # Entanglement: link qubits together
+    for i in range(5):
+        qc.cx(i, i + 1)
+
+    # Layer 2: more rotations after entanglement
+    for i in range(6):
+        qc.ry(params[6 + i], i)
+
     return qc
 
 
@@ -89,14 +109,19 @@ def cost_function(params):
 def solve_ai_strategy():
     """Find the Quantum opponent strategy that's hardest to beat."""
     print("⚛  Running quantum optimizer to find Quantum opponent strategy...")
-    result = differential_evolution(
-        cost_function,
-        bounds=[(-np.pi, np.pi)] * 6,
-        seed=42,
-        maxiter=300,
-        tol=1e-10,
-        polish=True,
-    )
+    best_result = None
+    for attempt in range(5):
+        x0 = np.random.default_rng(attempt).uniform(-np.pi, np.pi, 12)
+        result = minimize(
+            cost_function,
+            x0,
+            method="COBYLA",
+            options={"maxiter": 2000, "rhobeg": 0.5},
+        )
+        if best_result is None or result.fun < best_result.fun:
+            best_result = result
+        print(f"   Attempt {attempt+1}: weakness = {result.fun:.6f}")
+    result = best_result
     p2_bet, p2_call = circuit_to_strategy(result.x)
     print(f"   Weakness: {result.fun:.6f}")
     print(f"   Opponent bet probs:  J={p2_bet[0]:.3f}  Q={p2_bet[1]:.3f}  K={p2_bet[2]:.3f}")
@@ -117,8 +142,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Run optimizer on startup
-QO_BET, QO_CALL, QO_PARAMS = solve_ai_strategy()
+# Pre-computed by quantum optimizer (superposition + entanglement circuit)
+QO_BET = [0.2859, 0.3136, 0.8578]
+QO_CALL = [0.1306, 0.4666, 0.9250]
+QO_PARAMS = [-0.3799, -1.0883, -2.4736, -2.6528, 3.0709, 3.2555, -0.1422, 1.5444, 1.719, 5.405, 3.2022, -1.0258]
 
 # In-memory game storage
 games: dict = {}
