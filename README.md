@@ -1,6 +1,8 @@
 ## Details
 
 Kuhn poker is a simplified poker game (3 cards: Jack, Queen, King — one bet per hand). This project uses a 6-qubit quantum circuit, built with Qiskit, to discover a strong playing strategy through quantum optimization. You then play hands against that strategy in the browser.
+
+Link: https://kuhn-quantum-poker.vercel.app
  
 ## How it works
  
